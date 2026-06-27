@@ -1,10 +1,10 @@
 {
-  "name": "create-taksh-backend",
+  "name": "create-express-authkit",
   "version": "1.0.0",
   "description": "CLI to scaffold a Node.js + Express + MongoDB backend with auth built in",
   "type": "module",
   "bin": {
-    "create-taksh-backend": "./bin/cli.js"
+    "create-express-authkit": "./bin/cli.js"
   },
   "files": [
     "bin",
