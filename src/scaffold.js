@@ -44,7 +44,7 @@ export function scaffold(projectName, targetDir) {
 ✅ Done! Get started:
 
   cd ${projectName}
-  cp .env.example .env
+  cp .env.example .env (or copy .env.example .env on Windows)
   npm run dev
 `);
 }

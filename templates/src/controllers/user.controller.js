@@ -154,7 +154,7 @@ const newRefreshTokenGeneration = async (req, res) => {
             email: user.email
         }
 
-        jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, (err, decoded) => {
+        jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, async (err, decoded) => {
             if (err || decoded.id !== user._id.toString()) {
                 return res.status(400).json({
                     success: false,
