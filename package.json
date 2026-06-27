@@ -1,6 +1,6 @@
 {
   "name": "create-express-authkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI to scaffold a Node.js + Express + MongoDB backend with auth built in",
   "type": "module",
   "bin": {
@@ -14,7 +14,14 @@
   "scripts": {
     "test": "node bin/cli.js test-app"
   },
-  "keywords": ["backend", "boilerplate", "express", "mongodb", "auth", "cli"],
+  "keywords": [
+    "backend",
+    "boilerplate",
+    "express",
+    "mongodb",
+    "auth",
+    "cli"
+  ],
   "author": "Taksh Patel",
   "license": "MIT"
 }
