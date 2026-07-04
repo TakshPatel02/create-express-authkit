@@ -16,7 +16,16 @@ const generateRefreshToken = (user) => {
     );
 }
 
+const generateResetPasswordToken = (payload) => {
+    return jwt.sign({
+        payload
+    }, process.env.JWT_RESET_PASSWORD_TOKEN_SECRET, {
+        expiresIn: process.env.RESET_PASSWORD_JWT_EXPIRES_IN || '15m'
+    });
+}
+
 export {
     generateAccessToken,
-    generateRefreshToken
+    generateRefreshToken,
+    generateResetPasswordToken
 }

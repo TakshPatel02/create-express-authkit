@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import {User} from "../models/user.model.js";
+import User from "../models/user.model.js";
 
 export const authMiddleware = async (req, res, next) => {
     try {
@@ -19,7 +19,7 @@ export const authMiddleware = async (req, res, next) => {
         req.user = decoded;
         next();
 
-    } catch(err){
+    } catch (err) {
         console.error("Auth middleware error:", err);
         return res.status(401).json({
             success: false,
