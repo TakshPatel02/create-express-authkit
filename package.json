@@ -23,5 +23,11 @@
     "cli"
   ],
   "author": "Taksh Patel",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9"
+  }
 }
