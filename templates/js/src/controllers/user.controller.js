@@ -4,14 +4,23 @@ import crypto from "node:crypto";
 import User from "../models/user.model.js";
 import OTP from "../models/otp.model.js";
 import ResetToken from "../models/resetToken.model.js";
-import { forgetPasswordSchema, loginSchema, resetPasswordSchema, signupSchema, verifyOtpSchema} from '../validations/user.validation.js';
+import { forgetPasswordSchema, loginSchema, resetPasswordSchema, signupSchema, verifyOtpSchema } from '../validations/user.validation.js';
 import sendEmail from '../services/email.service.js';
 import { generateOTP, getOTPHtml, passwordResetHtml } from '../utils/otp.util.js';
 import { generateAccessToken, generateRefreshToken, generateResetPasswordToken } from "../utils/token.util.js";
 
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const validatedData = await signupSchema.safeParseAsync(req.body);
+
+        if (!validatedData.success) {
+            return res.status(400).json({
+                success: false,
+                message: validatedData.error.issues[0]?.message || 'Validation failed.',
+            });
+        }
+
+        const { name, email, password } = validatedData.data;
 
         const existingUser = await User.findOne({ email });
 
@@ -47,7 +56,16 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const validatedData = await loginSchema.safeParseAsync(req.body);
+
+        if (!validatedData.success) {
+            return res.status(400).json({
+                success: false,
+                message: validatedData.error.issues[0]?.message || 'Validation failed.',
+            });
+        }
+
+        const { email, password } = validatedData.data;
 
         const user = await User.findOne({ email });
 
@@ -170,7 +188,7 @@ const newRefreshTokenGeneration = async (req, res) => {
 
             const newAccessToken = generateAccessToken(payload);
             const newRefreshToken = generateRefreshToken(payload);
-            
+
             user.refreshToken = newRefreshToken;
             await user.save();
 
@@ -202,14 +220,14 @@ const forgetPassword = async (req, res) => {
     try {
         const validatedData = await forgetPasswordSchema.safeDecodeAsync(req.body);
 
-        if (validatedData.error) {
+       if(!validatedData.success){
             return res.status(400).json({
                 success: false,
-                message: 'Validation failed.',
+                message: validatedData.error.issues[0]?.message || 'Validation failed.',
             });
-        }
+       }
 
-        const {email} = validatedData.data;
+        const { email } = validatedData.data;
 
         const user = await User.findOne({ email });
 
@@ -225,6 +243,7 @@ const forgetPassword = async (req, res) => {
             success: true,
             message: 'If this email exists, an OTP has been sent.'
         });
+
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, message: 'An error occurred while resetting the password.' });
@@ -235,10 +254,10 @@ const verifyResetOTP = async (req, res) => {
     try {
         const validatedData = await verifyOtpSchema.safeParseAsync(req.body);
 
-        if(validatedData.error){
+        if(!validatedData.success){
             return res.status(400).json({
                 success: false,
-                message: 'Validation failed.'
+                message: validatedData.error.issues[0]?.message || 'Validation failed.',
             });
         }
 
@@ -289,7 +308,7 @@ const verifyResetOTP = async (req, res) => {
 
         await ResetToken.create({
             jti,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000) 
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000)
         })
 
         return res.status(200).json({
@@ -313,10 +332,10 @@ const resetPassword = async (req, res) => {
     try {
         const validatedData = await resetPasswordSchema.safeParseAsync(req.body);
 
-        if(validatedData.error){
+        if(!validatedData.success){
             return res.status(400).json({
                 success: false,
-                message: 'Validation failed.'
+                message: validatedData.error.issues[0]?.message || 'Validation failed.',
             });
         }
 
@@ -351,7 +370,7 @@ const resetPassword = async (req, res) => {
             { new: true }
         );
 
-         if (!tokenRecord) {
+        if (!tokenRecord) {
             return res.status(400).json({
                 success: false,
                 message: 'This reset link has already been used or is invalid.'
