@@ -1,6 +1,6 @@
 {
   "name": "create-express-authkit",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "CLI to scaffold a Node.js + Express + MongoDB backend with auth built in",
   "type": "module",
   "bin": {
