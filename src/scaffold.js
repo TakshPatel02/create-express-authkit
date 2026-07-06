@@ -44,13 +44,31 @@ export function scaffold(projectName, targetDir, lang) {
   console.log('📦 Installing dependencies...');
   execSync('npm install', { cwd: targetDir, stdio: 'inherit' });
 
-  const devCommand = lang === 'ts' ? 'npm run dev' : 'npm run dev';
+  console.log(getInstructions(projectName, lang));
+}
 
-  console.log(`
+function getInstructions(projectName, lang) {
+  const envStep = `cp .env.example .env  (or copy .env.example .env on Windows)`;
+
+  if (lang === 'ts') {
+    return `
 ✅ Done! Get started:
 
   cd ${projectName}
-  cp .env.example .env (or copy .env.example .env on Windows)
-  ${devCommand}
-`);
+  ${envStep}
+  npm run build
+  npm start
+
+  💡 During development, use "npm run dev" instead of build+start
+     for auto-restart on file changes.
+`;
+  }
+
+  return `
+✅ Done! Get started:
+
+  cd ${projectName}
+  ${envStep}
+  npm run dev
+`;
 }
