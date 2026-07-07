@@ -1,30 +1,79 @@
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import type { Request } from 'express';
+import rateLimit, { ipKeyGenerator, type Options } from 'express-rate-limit';
+import type { Request, Response } from 'express';
 
-export const forgetPasswordLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,                    // 5 requests per window
-    standardHeaders: true,     // return rate limit info in RateLimit-* headers
-    legacyHeaders: false,
-    keyGenerator: (req : Request): string => req.body.email || ipKeyGenerator(req.ip as string), // limit per email, fallback to IP
-    handler: (req, res) => {
-        res.status(429).json({
-            success: false,
-            message: 'Too many password reset requests. Please try again after 15 minutes.'
-        });
-    }
-});
+const createRateLimiter = (windowMs: number, max: number, message: string) => {
+    return rateLimit({
+        windowMs,
+        max,
+        standardHeaders: true,
+        legacyHeaders: false,
+        keyGenerator: (req: Request): string => {
+            const email = req.body?.email as string | undefined;
+            return email ? `${email}:${ipKeyGenerator(req.ip as string)}` : ipKeyGenerator(req.ip as string);
+        },
+        handler: (req: Request, res: Response) => {
+            res.status(429).json({
+                success: false,
+                message
+            });
+        }
+    });
+};
 
-export const verifyOtpLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req : Request): string => req.body.email || ipKeyGenerator(req.ip as string),
-    handler: (req, res) => {
-        res.status(429).json({
-            success: false,
-            message: 'Too many attempts. Please try again after 15 minutes.'
-        });
-    }
-});
+const createIpRateLimiter = (windowMs: number, max: number, message: string) => {
+    return rateLimit({
+        windowMs,
+        max,
+        standardHeaders: true,
+        legacyHeaders: false,
+        keyGenerator: (req: Request): string => ipKeyGenerator(req.ip as string),
+        handler: (req: Request, res: Response) => {
+            res.status(429).json({
+                success: false,
+                message
+            });
+        }
+    });
+};
+
+export const forgetPasswordLimiter = createRateLimiter(
+    15 * 60 * 1000,
+    5,
+    'Too many password reset requests. Please try again after 15 minutes.'
+);
+
+export const verifyOtpLimiter = createRateLimiter(
+    15 * 60 * 1000,
+    10,
+    'Too many OTP verification attempts. Please try again after 15 minutes.'
+);
+
+export const resetPasswordLimiter = createRateLimiter(
+    15 * 60 * 1000,
+    10,
+    'Too many reset attempts. Please try again after 15 minutes.'
+);
+
+export const loginIpLimiter = createIpRateLimiter(
+    15 * 60 * 1000,
+    20,
+    'Too many login attempts from this IP. Please try again later.'
+);
+
+export const loginEmailLimiter = createRateLimiter(
+    60 * 60 * 1000,
+    5,
+    'Too many login attempts for this account. Please try again after 1 hour.'
+);
+
+export const registerLimiter = createIpRateLimiter(
+    60 * 60 * 1000,
+    5,
+    'Too many registration attempts from this IP. Please try again after 1 hour.'
+);
+
+export const refreshTokenLimiter = createIpRateLimiter(
+    15 * 60 * 1000,
+    20,
+    'Too many token refresh attempts. Please try again later.'
+);

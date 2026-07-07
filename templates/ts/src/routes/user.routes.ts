@@ -1,22 +1,22 @@
 import express from 'express';
 import { loginUser, logoutUser, registerUser, newRefreshTokenGeneration, forgetPassword, resetPassword, verifyResetOTP } from '../controllers/user.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { forgetPasswordLimiter, verifyOtpLimiter } from '../middlewares/rateLimiter.middleware.js';
+import { forgetPasswordLimiter, verifyOtpLimiter, loginEmailLimiter, loginIpLimiter, refreshTokenLimiter, registerLimiter, resetPasswordLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = express.Router();
 
-router.post('/register', registerUser);
+router.post('/register', registerLimiter, registerUser);
 
-router.post('/login', loginUser);
+router.post('/login', loginIpLimiter, loginEmailLimiter, loginUser);
 
 router.delete('/logout', authMiddleware, logoutUser);
 
-router.post('/refresh-token', newRefreshTokenGeneration);
+router.post('/refresh-token', refreshTokenLimiter, newRefreshTokenGeneration);
 
 router.post('/forget-password', forgetPasswordLimiter, forgetPassword);
 
 router.post('/verify-reset-otp', verifyOtpLimiter, verifyResetOTP);
 
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', resetPasswordLimiter, resetPassword);
 
 export default router;

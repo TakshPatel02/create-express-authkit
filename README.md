@@ -18,8 +18,8 @@ A powerful, production-ready CLI tool to scaffold a **Node.js + Express** backen
 | **Password Reset** | Full forgot-password flow — OTP via email → verify → reset |
 | **Validation** | Request validation with **Zod** schemas |
 | **Email** | Nodemailer with Gmail OAuth2 for sending OTP emails |
-| **Security** | bcrypt password hashing, HTTP-only secure cookies, rate limiting |
-| **Rate Limiting** | `express-rate-limit` on sensitive endpoints (forgot-password, verify-OTP) |
+| **Security** | bcrypt password hashing, HTTP-only secure cookies, comprehensive rate limiting |
+| **Rate Limiting** | `express-rate-limit` on **every endpoint** — dual-strategy (IP-only & email+IP compound key) |
 | **Error Handling** | Global error handler + 404 catch-all pre-configured |
 | **Dev Experience** | `node --watch` (JS) or `tsx watch` (TS) for hot-reload during development |
 | **Modern JS** | ESM (`type: "module"`) throughout |
@@ -93,14 +93,10 @@ RESET_PASSWORD_JWT_EXPIRES_IN=15m
 # CORS
 CORS_ORIGIN=http://localhost:5173
 
-# Gmail OAuth2 (for sending OTP emails)
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REFRESH_TOKEN=your_google_refresh_token
+# Email (Nodemailer - Gmail App password)
+GOOGLE_APP_PASSWORD=your_google_app_password
 GOOGLE_USER=your_google_user@gmail.com
 ```
-
----
 
 ## 🔌 API Reference
 
@@ -108,13 +104,13 @@ All auth routes are mounted at **`/api/v1/users`**.
 
 | Method | Endpoint | Auth | Rate Limited | Description |
 | --- | --- | --- | --- | --- |
-| `POST` | `/register` | ✗ | ✗ | Register a new user |
-| `POST` | `/login` | ✗ | ✗ | Login and receive tokens |
+| `POST` | `/register` | ✗ | ✔ (IP) | Register a new user |
+| `POST` | `/login` | ✗ | ✔ (IP + Email) | Login and receive tokens |
 | `DELETE` | `/logout` | ✔ | ✗ | Logout and clear refresh token |
-| `POST` | `/refresh-token` | ✗ | ✗ | Rotate access & refresh tokens |
-| `POST` | `/forget-password` | ✗ | ✔ | Send a password-reset OTP to email |
-| `POST` | `/verify-reset-otp` | ✗ | ✔ | Verify the OTP and receive a reset token |
-| `POST` | `/reset-password` | ✗ | ✗ | Reset password using the reset token |
+| `POST` | `/refresh-token` | ✗ | ✔ (IP) | Rotate access & refresh tokens |
+| `POST` | `/forget-password` | ✗ | ✔ (Email+IP) | Send a password-reset OTP to email |
+| `POST` | `/verify-reset-otp` | ✗ | ✔ (Email+IP) | Verify the OTP and receive a reset token |
+| `POST` | `/reset-password` | ✗ | ✔ (Email+IP) | Reset password using the reset token |
 
 A health-check endpoint is also available:
 
@@ -289,7 +285,19 @@ The generated boilerplate follows a clean, maintainable architecture:
 - **HTTP-only cookies** — Refresh tokens are stored in `Secure`, `HttpOnly`, `SameSite: Strict` cookies to prevent XSS attacks.
 - **Token rotation** — On every refresh, both access and refresh tokens are rotated and the old refresh token is invalidated.
 - **OTP brute-force protection** — OTP attempts are tracked per record (max 5 attempts), and the OTP is deleted after exceeding the limit.
-- **Rate limiting** — Forgot-password (5 req/15min) and verify-OTP (10 req/15min) endpoints are rate-limited per email/IP.
+- **Comprehensive rate limiting** — Every endpoint (except logout) is rate-limited using a dual-strategy approach:
+
+  | Endpoint | Strategy | Limit | Window |
+  | --- | --- | --- | --- |
+  | `/register` | IP-only | 5 requests | 1 hour |
+  | `/login` | IP-only **+** Email+IP | 20 req (IP) / 5 req (email) | 15 min / 1 hour |
+  | `/refresh-token` | IP-only | 20 requests | 15 min |
+  | `/forget-password` | Email+IP | 5 requests | 15 min |
+  | `/verify-reset-otp` | Email+IP | 10 requests | 15 min |
+  | `/reset-password` | Email+IP | 10 requests | 15 min |
+
+  > **IP-only** limiters key on client IP. **Email+IP** limiters use a compound `email:ip` key to prevent targeted abuse while allowing different users from the same IP.
+
 - **Single-use reset tokens** — Password reset tokens include a unique `jti` claim and are marked as used after a single successful reset.
 - **Timing-safe responses** — The forgot-password endpoint always returns the same response regardless of whether the email exists.
 
