@@ -25,11 +25,23 @@ function copyDir(src, dest, projectName) {
   }
 }
 
-export function scaffold(projectName, targetDir, lang) {
-  const templateDir = path.join(__dirname, '../templates', lang);
+export function scaffold(projectName, targetDir, lang, template) {
+  let templateDir;
+
+  if (template) {
+    const subTemplateDir = path.join(__dirname, '../templates', lang, template);
+    if (fs.existsSync(subTemplateDir)) {
+      templateDir = subTemplateDir;
+    }
+  }
+
+  if (!templateDir) {
+    templateDir = path.join(__dirname, '../templates', lang);
+  }
 
   if (!fs.existsSync(templateDir)) {
-    console.error(`❌ Template for "${lang}" not found.`);
+    const templateName = template ? `${lang}/${template}` : lang;
+    console.error(`❌ Template for "${templateName}" not found.`);
     process.exit(1);
   }
 
@@ -38,11 +50,18 @@ export function scaffold(projectName, targetDir, lang) {
     process.exit(1);
   }
 
-  console.log(`\n🚀 Creating ${projectName} (${lang === 'ts' ? 'TypeScript' : 'JavaScript'})...`);
+  const langLabel = lang === 'ts' ? 'TypeScript' : 'JavaScript';
+  const templateLabel = template ? ` [${template}]` : '';
+
+  console.log(`\n🚀 Creating ${projectName} (${langLabel}${templateLabel})...`);
   copyDir(templateDir, targetDir, projectName);
 
   console.log('📦 Installing dependencies...');
-  execSync('npm install', { cwd: targetDir, stdio: 'inherit' });
+  try {
+    execSync('npm install', { cwd: targetDir, stdio: 'inherit' });
+  } catch (err) {
+    console.error('❌ Dependency installation failed. You can run "npm install" manually inside the folder.');
+  }
 
   console.log(getInstructions(projectName, lang));
 }
@@ -71,4 +90,4 @@ function getInstructions(projectName, lang) {
   ${envStep}
   npm run dev
 `;
-}
+}
