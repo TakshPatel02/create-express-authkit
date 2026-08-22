@@ -9,7 +9,7 @@ router.post('/register', registerLimiter, registerUser);
 
 router.post('/login', loginIpLimiter, loginEmailLimiter, loginUser);
 
-router.delete('/logout', authMiddleware, logoutUser);
+router.delete('/logout', logoutUser);
 
 router.post('/refresh-token', refreshTokenLimiter, newRefreshTokenGeneration);
 

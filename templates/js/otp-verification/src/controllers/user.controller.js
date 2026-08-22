@@ -155,66 +155,50 @@ const logoutUser = async (req, res) => {
 const newRefreshTokenGeneration = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
-
         if (!refreshToken) {
-            return res.status(400).json({
-                success: false,
-                message: 'No refresh token provided.'
-            });
+            return res.status(400).json({ success: false, message: 'No refresh token provided.' });
         }
 
         const user = await User.findOne({ refreshToken });
-
         if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid refresh token.'
-            });
+            return res.status(400).json({ success: false, message: 'Invalid refresh token.' });
         }
 
-        const payload = {
-            id: user._id,
-            name: user.name,
-            email: user.email
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET);
+        } catch (err) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired refresh token.' });
         }
 
-        jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, async (err, decoded) => {
-            if (err || decoded.id !== user._id.toString()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid refresh token.'
-                });
-            }
+        if (decoded.id !== user._id.toString()) {
+            return res.status(400).json({ success: false, message: 'Invalid refresh token.' });
+        }
 
-            const newAccessToken = generateAccessToken(payload);
-            const newRefreshToken = generateRefreshToken(payload);
+        const payload = { id: user._id, name: user.name, email: user.email };
+        const newAccessToken = generateAccessToken(payload);
+        const newRefreshToken = generateRefreshToken(payload);
 
-            user.refreshToken = newRefreshToken;
-            await user.save();
+        user.refreshToken = newRefreshToken;
+        await user.save();
 
-            res.cookie("refreshToken", newRefreshToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'Strict'
-            });
-
-            return res.status(200).json({
-                success: true,
-                message: 'Access token refreshed successfully.',
-                data: {
-                    accessToken: newAccessToken
-                }
-            });
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict'
         });
 
+        return res.status(200).json({
+            success: true,
+            message: 'Access token refreshed successfully.',
+            token: newAccessToken
+        });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({
-            success: false,
-            message: 'An error occurred while refreshing the access token.'
-        })
+        return res.status(500).json({ success: false, message: 'An error occurred while refreshing the access token.' });
     }
-}
+};
+
 
 const forgetPassword = async (req, res) => {
     try {
