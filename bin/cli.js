@@ -23,7 +23,7 @@ const response = await prompts([
     initial: 0
   },
   {
-    type: (prev) => (prev === 'js' ? 'select' : null),
+    type: 'select',
     name: 'template',
     message: 'Choose authentication strategy:',
     choices: [
@@ -35,10 +35,11 @@ const response = await prompts([
   }
 ]);
 
-if (!response.lang || (response.lang === 'js' && !response.template)) {
+if (!response.lang || !response.template) {
   console.log('\n❌ Cancelled.');
   process.exit(1);
 }
 
 const targetDir = path.join(process.cwd(), projectName);
-scaffold(projectName, targetDir, response.lang, response.template);
+scaffold(projectName, targetDir, response.lang, response.template);
+
